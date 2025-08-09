@@ -8,22 +8,23 @@ import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterv
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
 import DayDetailsModal from "@/components/modals/day-details-modal";
+import NewActivityModal from "@/components/modals/new-activity-modal";
+import MonthManagementModal from "@/components/modals/month-management-modal";
 
 export default function Calendar() {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<any>(null);
   const [showDayDetails, setShowDayDetails] = useState(false);
+  const [showNewActivity, setShowNewActivity] = useState(false);
+  const [showMonthManagement, setShowMonthManagement] = useState(false);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
 
   // Get preaching days for current month
   const { data: preachingDays = [] } = useQuery({
-    queryKey: ["/api/preaching-days", { 
-      startDate: monthStart.toISOString(), 
-      endDate: monthEnd.toISOString() 
-    }],
+    queryKey: ["/api/preaching-days", monthStart.toISOString(), monthEnd.toISOString()],
   });
 
   const handlePrevMonth = () => {
@@ -107,12 +108,12 @@ export default function Calendar() {
             
             <div className="flex items-center space-x-2">
               {user?.role === 'ADMIN' && (
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => setShowMonthManagement(true)}>
                   <Settings className="mr-1" size={16} />
-                  Modo Admin
+                  Gerenciar Mês
                 </Button>
               )}
-              <Button size="sm">
+              <Button size="sm" onClick={() => setShowNewActivity(true)}>
                 <Plus className="mr-1" size={16} />
                 Nova Atividade
               </Button>
@@ -185,7 +186,7 @@ export default function Calendar() {
         </CardContent>
       </Card>
 
-      {/* Day Details Modal */}
+      {/* Modals */}
       {showDayDetails && selectedDay && (
         <DayDetailsModal 
           day={selectedDay}
@@ -193,6 +194,17 @@ export default function Calendar() {
           onClose={() => setShowDayDetails(false)}
         />
       )}
+
+      <NewActivityModal
+        open={showNewActivity}
+        onOpenChange={setShowNewActivity}
+      />
+
+      <MonthManagementModal
+        open={showMonthManagement}
+        onOpenChange={setShowMonthManagement}
+        selectedMonth={currentDate}
+      />
     </div>
   );
 }

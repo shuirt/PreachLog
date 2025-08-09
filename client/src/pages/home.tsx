@@ -168,17 +168,18 @@ export default function Home() {
           </Button>
         </Link>
         
-        <Button
-          variant="outline" 
-          className="h-auto p-4 flex flex-col items-center space-y-2 hover:border-primary-300 hover:shadow-md"
-          onClick={() => console.log("View reports")}
-        >
-          <ChartBar className="text-orange-500" size={24} />
-          <div className="text-center">
-            <p className="text-sm font-medium text-gray-900">Relatórios</p>
-            <p className="text-xs text-gray-600">Estatísticas</p>
-          </div>
-        </Button>
+        <Link href="/reports">
+          <Button
+            variant="outline" 
+            className="h-auto p-4 flex flex-col items-center space-y-2 hover:border-primary-300 hover:shadow-md w-full"
+          >
+            <ChartBar className="text-orange-500" size={24} />
+            <div className="text-center">
+              <p className="text-sm font-medium text-gray-900">Relatórios</p>
+              <p className="text-xs text-gray-600">Estatísticas</p>
+            </div>
+          </Button>
+        </Link>
       </div>
       
       {/* Recent Activity & Progress Overview */}

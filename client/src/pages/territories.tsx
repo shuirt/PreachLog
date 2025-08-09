@@ -9,10 +9,13 @@ import { Progress } from "@/components/ui/progress";
 import { ChartBar, Plus, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import NewTerritoryModal from "@/components/modals/new-territory-modal";
+import { Link } from "wouter";
 
 export default function Territories() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [showNewTerritory, setShowNewTerritory] = useState(false);
 
   // Get territories
   const { data: territories = [] } = useQuery({
@@ -65,11 +68,13 @@ export default function Territories() {
           <p className="text-gray-600">Gerencie o progresso dos territórios</p>
         </div>
         <div className="flex items-center space-x-3">
-          <Button variant="outline">
-            <ChartBar className="mr-2" size={16} />
-            Estatísticas
-          </Button>
-          <Button>
+          <Link href="/reports">
+            <Button variant="outline">
+              <ChartBar className="mr-2" size={16} />
+              Estatísticas
+            </Button>
+          </Link>
+          <Button onClick={() => setShowNewTerritory(true)}>
             <Plus className="mr-2" size={16} />
             Novo Território
           </Button>
@@ -115,7 +120,7 @@ export default function Territories() {
               }
             </p>
             {territories.length === 0 && (
-              <Button>
+              <Button onClick={() => setShowNewTerritory(true)}>
                 <Plus className="mr-2" size={16} />
                 Criar Primeiro Território
               </Button>
@@ -198,6 +203,11 @@ export default function Territories() {
           ))}
         </div>
       )}
+
+      <NewTerritoryModal
+        open={showNewTerritory}
+        onOpenChange={setShowNewTerritory}
+      />
     </div>
   );
 }

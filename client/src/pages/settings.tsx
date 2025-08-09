@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Settings as SettingsIcon, Users, ServerCog, FileText, History, Key, Download, LogOut, Upload, Crown, UserCheck, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import UserManagementModal from "@/components/modals/user-management-modal";
 
 export default function Settings() {
   const { user } = useAuth();
@@ -19,6 +20,9 @@ export default function Settings() {
     email: user?.email || "",
     phone: user?.phone || "",
   });
+  const [showUserManagement, setShowUserManagement] = useState(false);
+  const [showSystemConfig, setShowSystemConfig] = useState(false);
+  const [showDataExport, setShowDataExport] = useState(false);
 
   // Get user participations for history
   const { data: participations = [] } = useQuery({
@@ -280,6 +284,12 @@ export default function Settings() {
           </Card>
         </div>
       </div>
+
+      {/* Modals */}
+      <UserManagementModal
+        open={showUserManagement}
+        onOpenChange={setShowUserManagement}
+      />
     </div>
   );
 }

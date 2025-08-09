@@ -9,6 +9,7 @@ import Home from "@/pages/home";
 import Calendar from "@/pages/calendar";
 import Territories from "@/pages/territories";
 import Settings from "@/pages/settings";
+import Reports from "@/pages/reports";
 import NotFound from "@/pages/not-found";
 import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
@@ -26,6 +27,7 @@ function Router() {
           <Route path="/" component={Home} />
           <Route path="/calendar" component={Calendar} />
           <Route path="/territories" component={Territories} />
+          <Route path="/reports" component={Reports} />
           <Route path="/settings" component={Settings} />
         </>
       )}
