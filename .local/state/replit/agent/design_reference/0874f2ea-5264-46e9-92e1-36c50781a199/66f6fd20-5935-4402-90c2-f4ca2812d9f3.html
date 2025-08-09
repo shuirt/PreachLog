@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Pregação</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: {
+                    'sans': ['Inter', 'system-ui', 'sans-serif']
+                },
+                colors: {
+                    primary: {
+                        50: '#eff6ff',
+                        500: '#2563eb',
+                        600: '#1d4ed8',
+                        700: '#1e40af'
+                    }
+                }
+            }
+        }
+    };
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .notification-enter {
+            animation: slideInRight 0.3s ease-out;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- @COMPONENT: AuthWrapper -->
+    <div id="authWrapper" class="min-h-screen">
+        <!-- Login Screen -->
+        <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary-50 to-blue-100">
+            <div class="w-full max-w-md">
+                <!-- Logo/Header -->
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 bg-primary-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-church text-white text-2xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-900 mb-2">Sistema de Pregação</h1>
+                    <p class="text-gray-600">Organize e gerencie atividades de pregação</p>
+                </div>
+                
+                <!-- Login Form -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <form id="loginForm">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <input type="email" data-bind="email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="seu@email.com" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+                                <input type="password" data-bind="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="••••••••" required>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <label class="flex items-center">
+                                    <input type="checkbox" class="w-4 h-4 text-primary-600 border-gray-300 rounded">
+                                    <span class="ml-2 text-gray-600">Lembrar-me</span>
+                                </label>
+                                <a href="#" class="text-primary-600 hover:text-primary-700">Esqueceu a senha?</a>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" data-event="click:handleLogin" class="w-full mt-6 bg-primary-500 hover:bg-primary-600 text-white py-2 px-4 rounded-lg font-medium transition-colors">
+                            Entrar
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Demo Users -->
+                <div class="mt-6 p-4 bg-white/60 rounded-lg backdrop-blur-sm">
+                    <p class="text-sm text-gray-600 text-center mb-3">Demo - Clique para entrar como:</p>
+                    <div class="space-y-2">
+                        <button onclick="loginAsUser('admin')" class="w-full text-left px-3 py-2 text-sm bg-white rounded border hover:bg-gray-50">
+                            <span class="font-medium">Admin</span> - acesso completo
+                        </button>
+                        <button onclick="loginAsUser('leader')" class="w-full text-left px-3 py-2 text-sm bg-white rounded border hover:bg-gray-50">
+                            <span class="font-medium">Dirigente</span> - gerenciar dias
+                        </button>
+                        <button onclick="loginAsUser('member')" class="w-full text-left px-3 py-2 text-sm bg-white rounded border hover:bg-gray-50">
+                            <span class="font-medium">Membro</span> - participar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main App -->
+        <div id="mainApp" class="hidden min-h-screen bg-gray-50">
+            <!-- Header with User Info -->
+            <header class="bg-white shadow-sm border-b border-gray-200 px-4 py-3">
+                <div class="flex items-center justify-between max-w-6xl mx-auto">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
+                            <i class="fas fa-church text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-semibold text-gray-900">Sistema de Pregação</h1>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <!-- Notifications -->
+                        <div class="relative">
+                            <button id="notificationBtn" class="p-2 text-gray-400 hover:text-gray-600 relative">
+                                <i class="fas fa-bell"></i>
+                                <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center" data-bind="notificationCount">3</span>
+                            </button>
+                        </div>
+                        
+                        <!-- User Menu -->
+                        <div class="flex items-center space-x-2">
+                            <!-- Profile image placeholder - not guaranteed to be square -->
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face" alt="User Avatar" class="w-8 h-8 rounded-full object-cover">
+                            <div class="hidden sm:block">
+                                <p class="text-sm font-medium text-gray-700" data-bind="user.name">João Silva</p>
+                                <p class="text-xs text-gray-500" data-bind="user.role">ADMIN</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Main Content Area -->
+            <main class="max-w-6xl mx-auto px-4 py-6 pb-20">
+                <!-- @COMPONENT: HomeTab -->
+                <div id="homeTab" class="tab-content active">
+                    <!-- Today's Date -->
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900" data-bind="currentDate">Hoje, 15 de Janeiro de 2024</h2>
+                        <p class="text-gray-600">Segunda-feira</p>
+                    </div>
+                    
+                    <!-- Today's Activity Card -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6" data-mock="true">
+                        <div class="flex items-start justify-between mb-4">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                                    <i class="fas fa-calendar-day text-primary-500 mr-2"></i>
+                                    Atividade de Hoje
+                                </h3>
+                            </div>
+                            <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">CONFIRMADO</span>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-clock text-gray-400"></i>
+                                <div>
+                                    <p class="text-sm text-gray-600">Horário de Saída</p>
+                                    <p class="font-medium" data-bind="preachingDay.departureTime">09:00</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-map-marker-alt text-gray-400"></i>
+                                <div>
+                                    <p class="text-sm text-gray-600">Local de Saída</p>
+                                    <p class="font-medium" data-bind="preachingDay.meetingPlace">Salão do Reino</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-user-crown text-gray-400"></i>
+                                <div>
+                                    <p class="text-sm text-gray-600">Dirigente</p>
+                                    <p class="font-medium" data-bind="preachingDay.leader.name">Maria Santos</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <div class="flex items-center space-x-2">
+                                        <i class="fas fa-users text-gray-400 text-sm"></i>
+                                        <span class="text-sm text-gray-600" data-bind="participationCount">8 participantes confirmados</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <i class="fas fa-map text-gray-400 text-sm"></i>
+                                        <span class="text-sm text-gray-600" data-bind="territory.name">Centro - Setor 1</span>
+                                    </div>
+                                </div>
+                                <button onclick="openDayDetails()" class="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                                    Ver detalhes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <button onclick="confirmParticipation()" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all">
+                            <i class="fas fa-check-circle text-green-500 text-xl mb-2"></i>
+                            <p class="text-sm font-medium text-gray-900">Confirmar</p>
+                            <p class="text-xs text-gray-600">Presença</p>
+                        </button>
+                        <button onclick="viewCalendar()" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all">
+                            <i class="fas fa-calendar text-blue-500 text-xl mb-2"></i>
+                            <p class="text-sm font-medium text-gray-900">Calendário</p>
+                            <p class="text-xs text-gray-600">Próximas</p>
+                        </button>
+                        <button onclick="viewTerritories()" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all">
+                            <i class="fas fa-map text-purple-500 text-xl mb-2"></i>
+                            <p class="text-sm font-medium text-gray-900">Territórios</p>
+                            <p class="text-xs text-gray-600">Progresso</p>
+                        </button>
+                        <button onclick="viewReports()" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all">
+                            <i class="fas fa-chart-bar text-orange-500 text-xl mb-2"></i>
+                            <p class="text-sm font-medium text-gray-900">Relatórios</p>
+                            <p class="text-xs text-gray-600">Estatísticas</p>
+                        </button>
+                    </div>
+                    
+                    <!-- Recent Activity & Notifications -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Recent Activity -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Atividade Recente</h3>
+                            <!-- @MAP: recentActivities.map(activity => ( -->
+                            <div class="space-y-4" data-mock="true">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-check text-green-600 text-xs"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm text-gray-900">
+                                            <span class="font-medium">Centro - Setor 1</span> foi concluído
+                                        </p>
+                                        <p class="text-xs text-gray-500">Há 2 horas</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-user-plus text-blue-600 text-xs"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm text-gray-900">
+                                            <span class="font-medium">3 novos participantes</span> se inscreveram para amanhã
+                                        </p>
+                                        <p class="text-xs text-gray-500">Há 4 horas</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-edit text-yellow-600 text-xs"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm text-gray-900">
+                                            Horário da atividade de <span class="font-medium">Quinta-feira</span> foi alterado
+                                        </p>
+                                        <p class="text-xs text-gray-500">Ontem</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+                        
+                        <!-- Progress Overview -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Progresso Geral</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-gray-600">Territórios Concluídos</span>
+                                        <span class="font-medium">12/20</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-green-500 h-2 rounded-full" style="width: 60%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-gray-600">Participação Este Mês</span>
+                                        <span class="font-medium">85%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-blue-500 h-2 rounded-full" style="width: 85%"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-gray-600">Atividades Realizadas</span>
+                                        <span class="font-medium">28/31</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-purple-500 h-2 rounded-full" style="width: 90%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: HomeTab -->
+                
+                <!-- @COMPONENT: CalendarTab -->
+                <div id="calendarTab" class="tab-content">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <!-- Calendar Header -->
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center space-x-4">
+                                <h2 class="text-xl font-semibold text-gray-900">Janeiro 2024</h2>
+                                <div class="flex items-center space-x-2">
+                                    <button class="p-2 hover:bg-gray-100 rounded-lg">
+                                        <i class="fas fa-chevron-left text-gray-600"></i>
+                                    </button>
+                                    <button class="p-2 hover:bg-gray-100 rounded-lg">
+                                        <i class="fas fa-chevron-right text-gray-600"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-2">
+                                <button id="adminModeBtn" class="bg-primary-500 hover:bg-primary-600 text-white px-3 py-2 rounded-lg text-sm font-medium" style="display: none;">
+                                    <i class="fas fa-cog mr-1"></i>
+                                    Modo Admin
+                                </button>
+                                <button onclick="addNewActivity()" class="bg-primary-500 hover:bg-primary-600 text-white px-3 py-2 rounded-lg text-sm font-medium">
+                                    <i class="fas fa-plus mr-1"></i>
+                                    Nova Atividade
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Calendar Grid -->
+                        <div class="grid grid-cols-7 gap-1 mb-2">
+                            <div class="p-3 text-center text-sm font-medium text-gray-600">Dom</div>
+                            <div class="p-3 text-center text-sm font-medium text-gray-600">Seg</div>
+                            <div class="p-3 text-center text-sm font-medium text-gray-600">Ter</div>
+                            <div class="p-3 text-center text-sm font-medium text-gray-600">Qua</div>
+                            <div class="p-3 text-center text-sm font-medium text-gray-600">Qui</div>
+                            <div class="p-3 text-center text-sm font-medium text-gray-600">Sex</div>
+                            <div class="p-3 text-center text-sm font-medium text-gray-600">Sáb</div>
+                        </div>
+                        
+                        <!-- Calendar Days -->
+                        <div class="grid grid-cols-7 gap-1" data-mock="true">
+                            <!-- Previous Month Days -->
+                            <div class="p-3 text-center text-gray-400 text-sm">31</div>
+                            
+                            <!-- Current Month Days -->
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">1</span>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">2</span>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded relative">
+                                <span class="text-sm">3</span>
+                                <div class="mt-1">
+                                    <div class="w-2 h-2 bg-blue-500 rounded-full mx-auto"></div>
+                                </div>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">4</span>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded relative">
+                                <span class="text-sm">5</span>
+                                <div class="mt-1">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full mx-auto"></div>
+                                </div>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">6</span>
+                            </div>
+                            
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">7</span>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">8</span>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">9</span>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded relative">
+                                <span class="text-sm">10</span>
+                                <div class="mt-1">
+                                    <div class="w-2 h-2 bg-yellow-500 rounded-full mx-auto"></div>
+                                </div>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">11</span>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded relative">
+                                <span class="text-sm">12</span>
+                                <div class="mt-1">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full mx-auto"></div>
+                                </div>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">13</span>
+                            </div>
+                            
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">14</span>
+                            </div>
+                            <div class="p-3 text-center bg-primary-100 border border-primary-300 cursor-pointer rounded relative">
+                                <span class="text-sm font-semibold text-primary-700">15</span>
+                                <div class="mt-1">
+                                    <div class="w-2 h-2 bg-primary-600 rounded-full mx-auto"></div>
+                                </div>
+                            </div>
+                            <!-- Continue for more days... -->
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">16</span>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded relative">
+                                <span class="text-sm">17</span>
+                                <div class="mt-1">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full mx-auto"></div>
+                                </div>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">18</span>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded relative">
+                                <span class="text-sm">19</span>
+                                <div class="mt-1">
+                                    <div class="w-2 h-2 bg-blue-500 rounded-full mx-auto"></div>
+                                </div>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">20</span>
+                            </div>
+                            
+                            <!-- More days... -->
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">21</span>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">22</span>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">23</span>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded relative">
+                                <span class="text-sm">24</span>
+                                <div class="mt-1">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full mx-auto"></div>
+                                </div>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">25</span>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded relative">
+                                <span class="text-sm">26</span>
+                                <div class="mt-1">
+                                    <div class="w-2 h-2 bg-blue-500 rounded-full mx-auto"></div>
+                                </div>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">27</span>
+                            </div>
+                            
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">28</span>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">29</span>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded">
+                                <span class="text-sm">30</span>
+                            </div>
+                            <div class="p-3 text-center hover:bg-gray-50 cursor-pointer rounded relative">
+                                <span class="text-sm">31</span>
+                                <div class="mt-1">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full mx-auto"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Next Month Days -->
+                            <div class="p-3 text-center text-gray-400 text-sm">1</div>
+                            <div class="p-3 text-center text-gray-400 text-sm">2</div>
+                            <div class="p-3 text-center text-gray-400 text-sm">3</div>
+                        </div>
+                        
+                        <!-- Legend -->
+                        <div class="mt-6 pt-4 border-t border-gray-200">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                                        <span class="text-sm text-gray-600">Confirmado</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                        <span class="text-sm text-gray-600">Agendado</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                                        <span class="text-sm text-gray-600">Em Progresso</span>
+                                    </div>
+                                </div>
+                                <button onclick="openMonthlyManager()" class="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                                    Gerenciar Mês
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: CalendarTab -->
+                
+                <!-- @COMPONENT: TerritoriesTab -->
+                <div id="territoriesTab" class="tab-content">
+                    <!-- Header -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">Territórios</h2>
+                            <p class="text-gray-600">Gerencie o progresso dos territórios</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <button onclick="showTerritoryStats()" class="bg-white border border-gray-300 hover:border-gray-400 px-4 py-2 rounded-lg text-sm font-medium">
+                                <i class="fas fa-chart-bar mr-2"></i>
+                                Estatísticas
+                            </button>
+                            <button onclick="addTerritory()" class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                                <i class="fas fa-plus mr-2"></i>
+                                Novo Território
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Search and Filters -->
+                    <div class="mb-6 flex flex-col sm:flex-row gap-4">
+                        <div class="flex-1">
+                            <input type="text" placeholder="Buscar território..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        </div>
+                        <div class="flex space-x-3">
+                            <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                                <option>Todos os Status</option>
+                                <option>Não Iniciado</option>
+                                <option>Em Andamento</option>
+                                <option>Concluído</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Territories Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <!-- @MAP: territories.map(territory => ( -->
+                        <!-- Territory Card 1 -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow" data-mock="true">
+                            <!-- A detailed map showing city blocks with residential areas and street layout -->
+                            <div class="h-48 bg-gray-100 flex items-center justify-center relative"
+                                 style="background-image: url('https://pixabay.com/get/g93fbc3f7c85cd318703fc15028d6785a947663a82fea969e3a483e3e3536a8fce3bc049539cce060908ff9b851cc4e7e6a7fc5986ffbc5677aecc5b594641e4b_1280.jpg'); background-size: cover; background-position: center;">
+                                <div class="absolute inset-0 bg-black bg-opacity-20"></div>
+                                <div class="relative z-10 text-white text-center">
+                                    <i class="fas fa-map text-2xl mb-2 opacity-75"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="p-4">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900" data-bind="territory.name">Centro - Setor 1</h3>
+                                        <p class="text-sm text-gray-600">20 quadras totais</p>
+                                    </div>
+                                    <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">ATIVO</span>
+                                </div>
+                                
+                                <!-- Progress Bar -->
+                                <div class="mb-3">
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-gray-600">Progresso</span>
+                                        <span class="font-medium">12/20 (60%)</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-green-500 h-2 rounded-full" style="width: 60%"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Territory Info -->
+                                <div class="space-y-2 text-sm text-gray-600 mb-4">
+                                    <div class="flex items-center justify-between">
+                                        <span>Última trabalhada:</span>
+                                        <span class="text-gray-900">10/01/2024</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>Quadras restantes:</span>
+                                        <span class="text-gray-900">8</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Actions -->
+                                <div class="flex space-x-2">
+                                    <button onclick="viewTerritoryDetails('centro1')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-lg text-sm font-medium">
+                                        Ver Detalhes
+                                    </button>
+                                    <button onclick="updateProgress('centro1')" class="flex-1 bg-primary-500 hover:bg-primary-600 text-white py-2 px-3 rounded-lg text-sm font-medium">
+                                        Atualizar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Territory Card 2 -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow" data-mock="true">
+                            <!-- An aerial view of a suburban neighborhood with houses and tree-lined streets -->
+                            <div class="h-48 bg-gray-100 flex items-center justify-center relative"
+                                 style="background-image: url('https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=400'); background-size: cover; background-position: center;">
+                                <div class="absolute inset-0 bg-black bg-opacity-20"></div>
+                                <div class="relative z-10 text-white text-center">
+                                    <i class="fas fa-map text-2xl mb-2 opacity-75"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="p-4">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900">Jardim Europa</h3>
+                                        <p class="text-sm text-gray-600">15 quadras totais</p>
+                                    </div>
+                                    <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full">PROGRESSO</span>
+                                </div>
+                                
+                                <!-- Progress Bar -->
+                                <div class="mb-3">
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-gray-600">Progresso</span>
+                                        <span class="font-medium">4/15 (27%)</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-yellow-500 h-2 rounded-full" style="width: 27%"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Territory Info -->
+                                <div class="space-y-2 text-sm text-gray-600 mb-4">
+                                    <div class="flex items-center justify-between">
+                                        <span>Última trabalhada:</span>
+                                        <span class="text-gray-900">05/01/2024</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>Quadras restantes:</span>
+                                        <span class="text-gray-900">11</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Actions -->
+                                <div class="flex space-x-2">
+                                    <button onclick="viewTerritoryDetails('jardimeuropa')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-lg text-sm font-medium">
+                                        Ver Detalhes
+                                    </button>
+                                    <button onclick="updateProgress('jardimeuropa')" class="flex-1 bg-primary-500 hover:bg-primary-600 text-white py-2 px-3 rounded-lg text-sm font-medium">
+                                        Atualizar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Territory Card 3 -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow" data-mock="true">
+                            <!-- A street view of an urban residential area with apartment buildings -->
+                            <div class="h-48 bg-gray-100 flex items-center justify-center relative"
+                                 style="background-image: url('https://images.unsplash.com/photo-1523217582562-09d0def993a6?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=400'); background-size: cover; background-position: center;">
+                                <div class="absolute inset-0 bg-black bg-opacity-20"></div>
+                                <div class="relative z-10 text-white text-center">
+                                    <i class="fas fa-map text-2xl mb-2 opacity-75"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="p-4">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900">Vila Industrial</h3>
+                                        <p class="text-sm text-gray-600">25 quadras totais</p>
+                                    </div>
+                                    <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2 py-1 rounded-full">PENDENTE</span>
+                                </div>
+                                
+                                <!-- Progress Bar -->
+                                <div class="mb-3">
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-gray-600">Progresso</span>
+                                        <span class="font-medium">0/25 (0%)</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-gray-400 h-2 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Territory Info -->
+                                <div class="space-y-2 text-sm text-gray-600 mb-4">
+                                    <div class="flex items-center justify-between">
+                                        <span>Última trabalhada:</span>
+                                        <span class="text-gray-400">Nunca</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>Quadras restantes:</span>
+                                        <span class="text-gray-900">25</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Actions -->
+                                <div class="flex space-x-2">
+                                    <button onclick="viewTerritoryDetails('vilaindustrial')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-lg text-sm font-medium">
+                                        Ver Detalhes
+                                    </button>
+                                    <button onclick="startTerritory('vilaindustrial')" class="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-lg text-sm font-medium">
+                                        Iniciar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- @END_MAP )) -->
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: TerritoriesTab -->
+                
+                <!-- @COMPONENT: SettingsTab -->
+                <div id="settingsTab" class="tab-content">
+                    <!-- Header -->
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Configurações</h2>
+                        <p class="text-gray-600">Gerencie suas preferências e conta</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Profile Section -->
+                        <div class="lg:col-span-2 space-y-6">
+                            <!-- User Profile -->
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">Perfil do Usuário</h3>
+                                
+                                <div class="flex items-start space-x-4 mb-6">
+                                    <!-- Profile avatar - using object-fit: cover for non-square images -->
+                                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face" alt="Profile" class="w-20 h-20 rounded-full object-cover">
+                                    <div class="flex-1">
+                                        <button class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                                            Alterar Foto
+                                        </button>
+                                        <p class="text-xs text-gray-600 mt-1">JPG ou PNG. Máximo 2MB.</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                                        <input type="text" data-bind="user.name" value="João Silva" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                        <input type="email" data-bind="user.email" value="joao@email.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+                                        <input type="tel" data-bind="user.phone" value="(11) 99999-9999" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Função</label>
+                                        <input type="text" data-bind="user.role" value="Administrador" disabled class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-6 pt-4 border-t border-gray-200">
+                                    <button class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium">
+                                        Salvar Alterações
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Activity History -->
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-lg font-semibold text-gray-900">Histórico de Atividades</h3>
+                                    <button onclick="exportHistory()" class="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                                        Exportar
+                                    </button>
+                                </div>
+                                
+                                <div class="space-y-4" data-mock="true">
+                                    <!-- @MAP: userHistory.map(item => ( -->
+                                    <div class="flex items-start space-x-3 p-3 rounded-lg border border-gray-100">
+                                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-user-crown text-green-600 text-xs"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <p class="text-sm text-gray-900">
+                                                Dirigiu atividade no <span class="font-medium">Centro - Setor 1</span>
+                                            </p>
+                                            <p class="text-xs text-gray-500">15/01/2024 às 09:00</p>
+                                            <div class="text-xs text-gray-600 mt-1">
+                                                8 participantes • 12 casas visitadas • 3 publicações deixadas
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-start space-x-3 p-3 rounded-lg border border-gray-100">
+                                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-users text-blue-600 text-xs"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <p class="text-sm text-gray-900">
+                                                Participou da atividade no <span class="font-medium">Jardim Europa</span>
+                                            </p>
+                                            <p class="text-xs text-gray-500">12/01/2024 às 14:30</p>
+                                            <div class="text-xs text-gray-600 mt-1">
+                                                Dirigente: Maria Santos • 6 participantes
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-start space-x-3 p-3 rounded-lg border border-gray-100">
+                                        <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-map text-purple-600 text-xs"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <p class="text-sm text-gray-900">
+                                                Atualizou progresso do território <span class="font-medium">Vila Industrial</span>
+                                            </p>
+                                            <p class="text-xs text-gray-500">10/01/2024 às 16:45</p>
+                                            <div class="text-xs text-gray-600 mt-1">
+                                                2 quadras concluídas • Progresso: 8%
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- @END_MAP )) -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Settings Sidebar -->
+                        <div class="space-y-6">
+                            <!-- Notifications -->
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">Notificações</h3>
+                                
+                                <div class="space-y-4">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900">Lembretes de Atividades</p>
+                                            <p class="text-xs text-gray-600">30 min antes do início</p>
+                                        </div>
+                                        <input type="checkbox" checked class="w-4 h-4 text-primary-600 border-gray-300 rounded">
+                                    </div>
+                                    
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900">Novas Atividades</p>
+                                            <p class="text-xs text-gray-600">Quando criadas pelo admin</p>
+                                        </div>
+                                        <input type="checkbox" checked class="w-4 h-4 text-primary-600 border-gray-300 rounded">
+                                    </div>
+                                    
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900">Atualizações</p>
+                                            <p class="text-xs text-gray-600">Mudanças em atividades</p>
+                                        </div>
+                                        <input type="checkbox" class="w-4 h-4 text-primary-600 border-gray-300 rounded">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Admin Tools -->
+                            <div id="adminTools" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">Ferramentas de Admin</h3>
+                                
+                                <div class="space-y-3">
+                                    <button onclick="openUserManagement()" class="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg">
+                                        <i class="fas fa-users-cog mr-2 text-gray-600"></i>
+                                        Gerenciar Usuários
+                                    </button>
+                                    
+                                    <button onclick="openSystemSettings()" class="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg">
+                                        <i class="fas fa-cogs mr-2 text-gray-600"></i>
+                                        Configurações do Sistema
+                                    </button>
+                                    
+                                    <button onclick="generateReports()" class="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg">
+                                        <i class="fas fa-file-alt mr-2 text-gray-600"></i>
+                                        Relatórios Avançados
+                                    </button>
+                                    
+                                    <button onclick="viewActivityLogs()" class="w-full text-left px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 rounded-lg">
+                                        <i class="fas fa-history mr-2 text-gray-600"></i>
+                                        Logs de Atividade
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Account Actions -->
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">Conta</h3>
+                                
+                                <div class="space-y-3">
+                                    <button onclick="changePassword()" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">
+                                        <i class="fas fa-key mr-2 text-gray-600"></i>
+                                        Alterar Senha
+                                    </button>
+                                    
+                                    <button onclick="downloadData()" class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">
+                                        <i class="fas fa-download mr-2 text-gray-600"></i>
+                                        Baixar Meus Dados
+                                    </button>
+                                    
+                                    <button onclick="logout()" class="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg">
+                                        <i class="fas fa-sign-out-alt mr-2"></i>
+                                        Sair da Conta
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: SettingsTab -->
+            </main>
+            
+            <!-- Bottom Navigation -->
+            <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 z-50">
+                <div class="max-w-6xl mx-auto">
+                    <div class="flex items-center justify-around">
+                        <button onclick="switchTab('home')" class="tab-btn active flex flex-col items-center py-2 px-3 text-primary-600">
+                            <i class="fas fa-home text-lg mb-1"></i>
+                            <span class="text-xs font-medium">Home</span>
+                        </button>
+                        <button onclick="switchTab('calendar')" class="tab-btn flex flex-col items-center py-2 px-3 text-gray-400">
+                            <i class="fas fa-calendar text-lg mb-1"></i>
+                            <span class="text-xs font-medium">Calendário</span>
+                        </button>
+                        <button onclick="switchTab('territories')" class="tab-btn flex flex-col items-center py-2 px-3 text-gray-400">
+                            <i class="fas fa-map text-lg mb-1"></i>
+                            <span class="text-xs font-medium">Mapas</span>
+                        </button>
+                        <button onclick="switchTab('settings')" class="tab-btn flex flex-col items-center py-2 px-3 text-gray-400">
+                            <i class="fas fa-cog text-lg mb-1"></i>
+                            <span class="text-xs font-medium">Config</span>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </div>
+    
+    <!-- Modals and Overlays -->
+    <!-- @COMPONENT: DayDetailsModal -->
+    <div id="dayDetailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-lg w-full max-h-screen overflow-y-auto">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900">Detalhes da Atividade</h3>
+                    <button onclick="closeDayDetails()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <!-- Day Details Content -->
+                <div class="space-y-4" data-mock="true">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-600">Data:</span>
+                                <span class="font-medium block">15 de Janeiro, 2024</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">Horário:</span>
+                                <span class="font-medium block">09:00</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">Local:</span>
+                                <span class="font-medium block">Salão do Reino</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">Dirigente:</span>
+                                <span class="font-medium block">Maria Santos</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Participants List -->
+                    <div>
+                        <h4 class="font-medium text-gray-900 mb-2">Participantes (8)</h4>
+                        <div class="space-y-2">
+                            <!-- @MAP: participants.map(participant => ( -->
+                            <div class="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+                                <div class="flex items-center space-x-2">
+                                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face" alt="Participant" class="w-6 h-6 rounded-full object-cover">
+                                    <span class="text-sm">João Silva</span>
+                                </div>
+                                <span class="text-xs text-green-600 font-medium">CONFIRMADO</span>
+                            </div>
+                            <div class="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+                                <div class="flex items-center space-x-2">
+                                    <img src="https://images.unsplash.com/photo-1494790108755-2616b9e9b7d9?w=32&h=32&fit=crop&crop=face" alt="Participant" class="w-6 h-6 rounded-full object-cover">
+                                    <span class="text-sm">Ana Costa</span>
+                                </div>
+                                <span class="text-xs text-green-600 font-medium">CONFIRMADO</span>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="pt-4 border-t border-gray-200">
+                        <div class="flex space-x-3">
+                            <button class="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg font-medium">
+                                Confirmar Presença
+                            </button>
+                            <button class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium">
+                                Não Posso Ir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: DayDetailsModal -->
+    
+    <!-- @COMPONENT: NotificationPanel -->
+    <div id="notificationPanel" class="hidden fixed top-16 right-4 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
+        <div class="p-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-gray-900">Notificações</h3>
+                <button onclick="markAllAsRead()" class="text-xs text-primary-600 hover:text-primary-700">
+                    Marcar todas como lidas
+                </button>
+            </div>
+            
+            <div class="space-y-3 max-h-96 overflow-y-auto" data-mock="true">
+                <!-- @MAP: notifications.map(notification => ( -->
+                <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div class="flex items-start space-x-2">
+                        <i class="fas fa-info-circle text-blue-600 text-sm mt-0.5"></i>
+                        <div class="flex-1">
+                            <p class="text-sm text-gray-900">Nova atividade agendada para amanhã</p>
+                            <p class="text-xs text-gray-600 mt-1">Há 30 minutos</p>
+                        </div>
+                        <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    </div>
+                </div>
+                
+                <div class="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div class="flex items-start space-x-2">
+                        <i class="fas fa-check-circle text-green-600 text-sm mt-0.5"></i>
+                        <div class="flex-1">
+                            <p class="text-sm text-gray-900">Território Centro concluído com sucesso</p>
+                            <p class="text-xs text-gray-600 mt-1">Há 2 horas</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div class="flex items-start space-x-2">
+                        <i class="fas fa-exclamation-triangle text-yellow-600 text-sm mt-0.5"></i>
+                        <div class="flex-1">
+                            <p class="text-sm text-gray-900">Lembrete: atividade em 30 minutos</p>
+                            <p class="text-xs text-gray-600 mt-1">Agora</p>
+                        </div>
+                        <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    </div>
+                </div>
+                <!-- @END_MAP )) -->
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: NotificationPanel -->
+    
+    <!-- @COMPONENT: Toast Notifications -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2">
+        <!-- Toasts will be dynamically added here -->
+    </div>
+    <!-- @END_COMPONENT: Toast Notifications -->
+    
+    <script>
+    (() => {
+        let currentUser = null;
+        let currentTab = 'home';
+        
+        // Demo user data
+        const demoUsers = {
+            admin: {
+                name: 'Admin Silva',
+                email: 'admin@sistema.com',
+                role: 'ADMIN',
+                avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face'
+            },
+            leader: {
+                name: 'João Dirigente',
+                email: 'dirigente@sistema.com',
+                role: 'LEADER',
+                avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face'
+            },
+            member: {
+                name: 'Maria Membro',
+                email: 'membro@sistema.com',
+                role: 'MEMBER',
+                avatar: 'https://images.unsplash.com/photo-1494790108755-2616b9e9b7d9?w=80&h=80&fit=crop&crop=face'
+            }
+        };
+        
+        // Login functions
+        window.loginAsUser = function(userType) {
+            currentUser = demoUsers[userType];
+            showApp();
+            updateUserInterface();
+        };
+        
+        function showApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+        }
+        
+        function updateUserInterface() {
+            if (!currentUser) return;
+            
+            // Update user info in header
+            document.querySelector('[data-bind="user.name"]').textContent = currentUser.name;
+            document.querySelector('[data-bind="user.role"]').textContent = currentUser.role;
+            
+            // Show/hide admin features
+            const adminElements = document.querySelectorAll('#adminTools, #adminModeBtn');
+            adminElements.forEach(el => {
+                if (currentUser.role === 'ADMIN') {
+                    el.style.display = 'block';
+                } else {
+                    el.style.display = 'none';
+                }
+            });
+        }
+        
+        // Tab switching
+        window.switchTab = function(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // Update nav buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.add('text-gray-400');
+                btn.classList.remove('text-primary-600');
+            });
+            
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('text-primary-600');
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.remove('text-gray-400');
+            
+            currentTab = tabName;
+        };
+        
+        // Modal functions
+        window.openDayDetails = function() {
+            document.getElementById('dayDetailsModal').classList.remove('hidden');
+        };
+        
+        window.closeDayDetails = function() {
+            document.getElementById('dayDetailsModal').classList.add('hidden');
+        };
+        
+        // Notification panel
+        window.toggleNotifications = function() {
+            const panel = document.getElementById('notificationPanel');
+            panel.classList.toggle('hidden');
+        };
+        
+        // Close notification panel when clicking outside
+        document.addEventListener('click', function(e) {
+            const panel = document.getElementById('notificationPanel');
+            const btn = document.getElementById('notificationBtn');
+            
+            if (!panel.contains(e.target) && !btn.contains(e.target)) {
+                panel.classList.add('hidden');
+            }
+        });
+        
+        // Notification button click
+        document.getElementById('notificationBtn').addEventListener('click', function() {
+            toggleNotifications();
+        });
+        
+        // Toast notification function
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `notification-enter bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm`;
+            
+            const colors = {
+                success: 'border-green-200 bg-green-50',
+                error: 'border-red-200 bg-red-50',
+                warning: 'border-yellow-200 bg-yellow-50',
+                info: 'border-blue-200 bg-blue-50'
+            };
+            
+            const icons = {
+                success: 'fas fa-check-circle text-green-600',
+                error: 'fas fa-exclamation-circle text-red-600',
+                warning: 'fas fa-exclamation-triangle text-yellow-600',
+                info: 'fas fa-info-circle text-blue-600'
+            };
+            
+            toast.className += ` ${colors[type] || colors.info}`;
+            
+            toast.innerHTML = `
+                <div class="flex items-start space-x-3">
+                    <i class="${icons[type] || icons.info}"></i>
+                    <div class="flex-1">
+                        <p class="text-sm text-gray-900">${message}</p>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('toastContainer').appendChild(toast);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+        
+        // Quick action functions
+        window.confirmParticipation = function() {
+            showToast('Presença confirmada com sucesso!', 'success');
+        };
+        
+        window.viewCalendar = function() {
+            switchTab('calendar');
+        };
+        
+        window.viewTerritories = function() {
+            switchTab('territories');
+        };
+        
+        window.viewReports = function() {
+            showToast('Função de relatórios em desenvolvimento', 'info');
+        };
+        
+        // Placeholder functions for development
+        window.addNewActivity = function() {
+            showToast('Modal de nova atividade seria aberto aqui', 'info');
+        };
+        
+        window.openMonthlyManager = function() {
+            showToast('Modal de gerenciamento mensal seria aberto aqui', 'info');
+        };
+        
+        window.viewTerritoryDetails = function(territoryId) {
+            showToast(`Detalhes do território ${territoryId} seriam mostrados`, 'info');
+        };
+        
+        window.updateProgress = function(territoryId) {
+            showToast(`Modal de atualização de progresso para ${territoryId}`, 'info');
+        };
+        
+        window.startTerritory = function(territoryId) {
+            showToast(`Território ${territoryId} marcado como iniciado`, 'success');
+        };
+        
+        window.openUserManagement = function() {
+            showToast('Sistema de gerenciamento de usuários seria aberto', 'info');
+        };
+        
+        window.openSystemSettings = function() {
+            showToast('Configurações avançadas do sistema', 'info');
+        };
+        
+        window.generateReports = function() {
+            showToast('Gerador de relatórios avançados', 'info');
+        };
+        
+        window.viewActivityLogs = function() {
+            showToast('Logs de atividade do sistema', 'info');
+        };
+        
+        window.logout = function() {
+            if (confirm('Deseja realmente sair?')) {
+                document.getElementById('mainApp').classList.add('hidden');
+                document.getElementById('loginScreen').classList.remove('hidden');
+                currentUser = null;
+            }
+        };
+        
+        window.markAllAsRead = function() {
+            showToast('Todas as notificações foram marcadas como lidas', 'success');
+            // Hide notification badges
+            document.querySelector('[data-bind="notificationCount"]').textContent = '0';
+        };
+        
+        // Auto-refresh simulation (every 30 seconds as per UX flow)
+        setInterval(() => {
+            if (currentUser && Math.random() < 0.3) { // 30% chance of update
+                const messages = [
+                    'Nova atividade foi adicionada',
+                    'Horário de atividade foi alterado',
+                    'Novo participante se inscreveu',
+                    'Progresso de território atualizado'
+                ];
+                
+                const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+                showToast(randomMessage, 'info');
+                
+                // Update notification count
+                const currentCount = parseInt(document.querySelector('[data-bind="notificationCount"]').textContent) || 0;
+                document.querySelector('[data-bind="notificationCount"]').textContent = currentCount + 1;
+            }
+        }, 30000);
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set current date
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('pt-BR', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+            
+            const dateElement = document.querySelector('[data-bind="currentDate"]');
+            if (dateElement) {
+                dateElement.textContent = `Hoje, ${dateStr}`;
+            }
+        });
+        
+        // Close modals on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal, #dayDetailsModal, #notificationPanel').forEach(modal => {
+                    modal.classList.add('hidden');
+                });
+            }
+        });
+    })();
+    </script>
+</body>
+</html>
