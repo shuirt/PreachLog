@@ -1,0 +1,260 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Modelo para usuários do sistema
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  phone     String?
+  avatar    String?
+  role      UserRole @default(MEMBER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  preachingDaysAsLeader PreachingDay[] @relation("Leader")
+  participations        Participation[]
+  userNotifications     UserNotification[]
+
+  @@map("users")
+}
+
+// Enum para tipos de usuário
+enum UserRole {
+  ADMIN
+  COORDINATOR
+  LEADER
+  MEMBER
+}
+
+// Modelo para bairros/territórios
+model Territory {
+  id               String   @id @default(cuid())
+  name             String   @unique // Nome do bairro
+  mapImageUrl      String? // URL da imagem do mapa
+  totalBlocks      Int      @default(0) // Total de quadras no território
+  completedBlocks  Int      @default(0) // Quadras já trabalhadas
+  completionRate   Float    @default(0) // Porcentagem calculada automaticamente
+  lastWorkedAt     DateTime? // Última vez que foi trabalhado
+  isActive         Boolean  @default(true)
+  description      String?
+  coordinates      String? // JSON com coordenadas do território
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relacionamentos
+  preachingDays PreachingDay[]
+  blocks        Block[]
+
+  @@map("territories")
+}
+
+// Modelo para quadras individuais dentro de um território
+model Block {
+  id          String      @id @default(cuid())
+  number      String // Número ou identificação da quadra
+  status      BlockStatus @default(PENDING)
+  territoryId String
+  lastWorkedAt DateTime?
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relacionamentos
+  territory     Territory       @relation(fields: [territoryId], references: [id], onDelete: Cascade)
+  workSessions  WorkSession[]
+
+  @@unique([territoryId, number])
+  @@map("blocks")
+}
+
+// Enum para status das quadras
+enum BlockStatus {
+  PENDING     // Aguardando trabalho
+  IN_PROGRESS // Em andamento
+  COMPLETED   // Concluída
+  REVISIT     // Necessita revisita
+}
+
+// Modelo para dias de pregação
+model PreachingDay {
+  id           String    @id @default(cuid())
+  date         DateTime  @unique
+  departureTime String   // Horário de saída (formato HH:MM)
+  meetingPlace String    // Local de saída/encontro
+  leaderId     String    // Dirigente do dia
+  territoryId  String?   // Território principal do dia
+  status       DayStatus @default(SCHEDULED)
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relacionamentos
+  leader        User            @relation("Leader", fields: [leaderId], references: [id])
+  territory     Territory?      @relation(fields: [territoryId], references: [id])
+  participations Participation[]
+  workSessions  WorkSession[]
+
+  @@map("preaching_days")
+}
+
+// Enum para status dos dias de pregação
+enum DayStatus {
+  SCHEDULED  // Agendado
+  CONFIRMED  // Confirmado
+  IN_PROGRESS // Em andamento
+  COMPLETED  // Concluído
+  CANCELLED  // Cancelado
+}
+
+// Modelo para participações em dias de pregação
+model Participation {
+  id             String   @id @default(cuid())
+  userId         String
+  preachingDayId String
+  attendedAt     DateTime? // Null se não compareceu
+  leftAt         DateTime? // Horário que saiu (opcional)
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relacionamentos
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  preachingDay PreachingDay @relation(fields: [preachingDayId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, preachingDayId])
+  @@map("participations")
+}
+
+// Modelo para sessões de trabalho em quadras específicas
+model WorkSession {
+  id             String    @id @default(cuid())
+  preachingDayId String
+  blockId        String
+  startedAt      DateTime  @default(now())
+  finishedAt     DateTime?
+  notes          String?
+  housesVisited  Int       @default(0)
+  contactsMade   Int       @default(0)
+  materialsLeft  Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relacionamentos
+  preachingDay PreachingDay @relation(fields: [preachingDayId], references: [id], onDelete: Cascade)
+  block        Block        @relation(fields: [blockId], references: [id], onDelete: Cascade)
+
+  @@map("work_sessions")
+}
+
+// Modelo para notificações do sistema
+model Notification {
+  id        String           @id @default(cuid())
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  isGlobal  Boolean          @default(false) // Se é para todos os usuários
+  expiresAt DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  // Relacionamentos
+  userNotifications UserNotification[]
+
+  @@map("notifications")
+}
+
+// Enum para tipos de notificação
+enum NotificationType {
+  INFO
+  WARNING
+  SUCCESS
+  ERROR
+  REMINDER
+}
+
+// Modelo para notificações por usuário
+model UserNotification {
+  id             String   @id @default(cuid())
+  userId         String
+  notificationId String
+  readAt         DateTime?
+  createdAt      DateTime @default(now())
+
+  // Relacionamentos
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, notificationId])
+  @@map("user_notifications")
+}
+
+// Modelo para configurações do sistema
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  type      ConfigType @default(STRING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_configs")
+}
+
+// Enum para tipos de configuração
+enum ConfigType {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+}
+
+// Modelo para log de atividades
+model ActivityLog {
+  id          String       @id @default(cuid())
+  userId      String?
+  action      String       // Ação realizada
+  entity      String       // Entidade afetada (User, Territory, etc.)
+  entityId    String       // ID da entidade
+  oldValues   String?      // JSON com valores antigos
+  newValues   String?      // JSON com valores novos
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime     @default(now())
+
+  @@map("activity_logs")
+}
+
+// Modelo para relatórios gerados
+model Report {
+  id          String     @id @default(cuid())
+  name        String
+  type        ReportType
+  parameters  String?    // JSON com parâmetros do relatório
+  filePath    String?    // Caminho do arquivo gerado
+  generatedBy String?    // ID do usuário que gerou
+  createdAt   DateTime   @default(now())
+  expiresAt   DateTime?
+
+  @@map("reports")
+}
+
+// Enum para tipos de relatório
+enum ReportType {
+  TERRITORY_PROGRESS
+  USER_ACTIVITY
+  MONTHLY_SUMMARY
+  ATTENDANCE_REPORT
+  COMPLETION_STATS
+}

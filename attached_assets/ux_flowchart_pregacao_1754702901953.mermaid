@@ -1,0 +1,189 @@
+flowchart TD
+    A[📱 App Inicializado] --> B{Usuário<br/>Autenticado?}
+    
+    B -->|Não| C[🔐 Tela de Login]
+    C --> D[📝 Inserir Email/Senha]
+    D --> E{Credenciais<br/>Válidas?}
+    E -->|Não| F[❌ Erro de Login]
+    F --> D
+    E -->|Sim| G[✅ Login Realizado]
+    
+    C --> H[📋 Criar Nova Conta]
+    H --> I[📝 Formulário de Registro]
+    I --> J[📧 Verificação de Email]
+    J --> G
+    
+    B -->|Sim| K[🏠 Aba HOME]
+    G --> K
+    
+    %% ABA HOME
+    K --> L[📅 Data Atual Exibida]
+    L --> M{Atividade<br/>Hoje?}
+    M -->|Sim| N[📋 Card com Detalhes do Dia<br/>• Horário de Saída<br/>• Local de Saída<br/>• Dirigente]
+    M -->|Não| O[💤 Nenhuma Atividade Hoje]
+    
+    N --> N1[🔄 Auto-Refresh a cada 30s<br/>Detecta Alterações Admin]
+    N1 --> N2{Alteração<br/>Detectada?}
+    N2 -->|Sim| N3[✨ Animação de Update<br/>• Highlight Changes<br/>• Notification Badge]
+    N3 --> N
+    
+    N --> P[👆 Toque no Card]
+    P --> Q[📋 Modal com Detalhes Completos<br/>• Participantes<br/>• Território<br/>• Status]
+    
+    Q --> R{Usuário é<br/>Dirigente?}
+    R -->|Sim| S[⚙️ Botão Gerenciar Dia]
+    S --> T[📝 Editar Detalhes<br/>• Alterar Horário<br/>• Alterar Local<br/>• Adicionar Notas]
+    R -->|Não| U[👥 Botão Confirmar Presença]
+    
+    %% NAVEGAÇÃO ENTRE ABAS
+    K --> V[📊 Navegação Bottom Tab]
+    V --> W[📅 Aba CALENDÁRIO]
+    V --> X[🗺️ Aba MAPAS]
+    V --> Y[⚙️ Aba CONFIGURAÇÕES]
+    
+    %% ABA CALENDÁRIO
+    W --> Z[📅 Calendário Mensal]
+    Z --> AA[👆 Toque em um Dia]
+    AA --> BB{Dia tem<br/>Atividade?}
+    BB -->|Não| CC[💤 Sem Atividades]
+    BB -->|Sim| DD[🎯 Card Modal Aparece<br/>• Horário<br/>• Local<br/>• Dirigente<br/>• Status]
+    
+    DD --> EE{Usuário é<br/>Admin/Coord?}
+    EE -->|Sim| FF[➕ Botão Adicionar Atividade]
+    FF --> GG[📝 Formulário Nova Atividade<br/>• Data/Hora<br/>• Local<br/>• Dirigente<br/>• Território]
+    
+    EE -->|Sim| FF1[⚙️ Botão Gerenciar Mês]
+    FF1 --> GG1[📋 Modal Gestão Mensal<br/>Lista de Todos os Dias]
+    GG1 --> HH1[👆 Selecionar Dia Específico]
+    HH1 --> II1[📝 Formulário Edição Rápida<br/>• Dirigente Dropdown<br/>• Horário Time Picker<br/>• Local Campo Texto]
+    
+    II1 --> JJ1[💾 Salvar Alterações]
+    JJ1 --> KK1[🔄 Auto-Update em Tempo Real<br/>• Aba HOME<br/>• Calendário<br/>• Notificações]
+    
+    GG1 --> LL1[🔍 Filtros Gestão Mensal<br/>• Por Dirigente<br/>• Dias Vazios<br/>• Status Específico]
+    
+    GG1 --> MM1[📊 Ações em Lote<br/>• Copiar Configuração<br/>• Aplicar a Múltiplos Dias<br/>• Template Semanal]
+    
+    MM1 --> NN1[✅ Confirmar Alterações Lote]
+    NN1 --> KK1
+    
+    Z --> HH[◀️▶️ Navegação Meses]
+    HH --> II[📊 Filtros Disponíveis<br/>• Por Dirigente<br/>• Por Território<br/>• Por Status]
+    
+    Z --> HH2{Usuário é<br/>Admin?}
+    HH2 -->|Sim| II2[⚙️ Botão Admin no Topo]
+    II2 --> JJ2[📋 Modo Administração Mensal<br/>Ativa Edição Rápida]
+    
+    JJ2 --> KK2[👆 Toque Rápido em Qualquer Dia]
+    KK2 --> LL2[⚡ Modal Edição Instantânea<br/>• Dirigente Select<br/>• Horário Quick Pick<br/>• Local Autocomplete]
+    
+    LL2 --> MM2[💾 Salvar com Um Clique]
+    MM2 --> NN2[🔄 Update Instantâneo<br/>• Visual do Calendário<br/>• Aba HOME se hoje<br/>• Cache Local]
+    
+    JJ2 --> OO2[📅 Visualização Grade Compacta<br/>Todos os Dias do Mês]
+    OO2 --> PP2[✏️ Edição Inline<br/>Clicar para Editar]
+    PP2 --> QQ2[⚡ Auto-Save em 2s<br/>Sem Modal]
+    
+    JJ2 --> RR2[📋 Painel Dirigentes do Mês<br/>Lista com Distribuição]
+    RR2 --> SS2[🔄 Arrastar e Soltar<br/>Reatribuir Dirigentes]
+    SS2 --> TT2[📊 Validação Automática<br/>• Conflitos<br/>• Disponibilidade]
+    
+    %% ABA MAPAS
+    X --> JJ[📋 Lista de Territórios]
+    JJ --> KK[👆 Toque em Território]
+    KK --> LL[🗺️ Visualização do Mapa<br/>• Nome do Bairro<br/>• Imagem do Mapa<br/>• Barra de Progresso<br/>• Última Trabalhada]
+    
+    LL --> MM[🔍 Zoom na Imagem]
+    MM --> NN[📱 Gestos de Pan/Zoom]
+    
+    LL --> OO{Usuário é<br/>Dirigente/Admin?}
+    OO -->|Sim| PP[✏️ Botão Editar Progresso]
+    PP --> QQ[📝 Modal Atualizar Quadras<br/>• Quadras Concluídas<br/>• Notas<br/>• Data Trabalho]
+    
+    QQ --> RR[💾 Salvar Alterações]
+    RR --> SS[📊 Recalcular Progresso<br/>• Atualizar Porcentagem<br/>• Atualizar Data]
+    
+    JJ --> TT[🔍 Barra de Busca<br/>Filtrar por Bairro]
+    TT --> UU[📊 Filtros de Status<br/>• Não Iniciado<br/>• Em Andamento<br/>• Concluído]
+    
+    JJ --> VV[📊 Botão Estatísticas Gerais]
+    VV --> WW[📈 Modal com Métricas<br/>• Total Territórios<br/>• Porcentagem Geral Concluído<br/>• Territórios Ativos]
+    
+    %% ABA CONFIGURAÇÕES
+    Y --> XX[👤 Seção Perfil do Usuário]
+    XX --> YY[✏️ Editar Perfil]
+    YY --> ZZ[📝 Formulário Edição<br/>• Nome<br/>• Email<br/>• Telefone<br/>• Foto]
+    
+    XX --> AAA[📊 Seção Histórico]
+    AAA --> BBB[🎯 Histórico como Dirigente]
+    BBB --> CCC[📋 Lista de Dias Dirigidos<br/>• Data<br/>• Participantes<br/>• Território<br/>• Resultados]
+    
+    CCC --> DDD[👆 Toque em Item]
+    DDD --> EEE[📋 Detalhes do Dia<br/>• Quadras Trabalhadas<br/>• Participantes Presentes<br/>• Estatísticas]
+    
+    AAA --> FFF[👥 Histórico de Participação]
+    FFF --> GGG[📋 Lista de Participações<br/>• Data<br/>• Dirigente<br/>• Território<br/>• Status]
+    
+    Y --> HHH[⚙️ Configurações Gerais]
+    HHH --> III[🔔 Configurações Notificação<br/>• Lembretes<br/>• Novos Dias<br/>• Atualizações]
+    
+    HHH --> JJJ[🔒 Configurações Privacidade<br/>• Visibilidade Perfil<br/>• Histórico Público]
+    
+    HHH --> KKK[💾 Backup e Sincronização<br/>• Sync Automático<br/>• Export Dados]
+    
+    HHH --> KKK1{Usuário é<br/>Admin?}
+    KKK1 -->|Sim| LLL1[⚙️ Configurações Avançadas<br/>Admin Only]
+    LLL1 --> MMM1[📊 Gestão de Usuários<br/>• Promover Dirigentes<br/>• Ativar/Desativar<br/>• Permissões]
+    
+    LLL1 --> NNN1[📅 Templates de Programação<br/>• Padrões Semanais<br/>• Dirigentes Padrão<br/>• Locais Frequentes]
+    
+    LLL1 --> OOO1[🔔 Configurar Notificações<br/>Sistema Global]
+    
+    Y --> LLL[📊 Relatórios Pessoais]
+    LLL --> MMM[📈 Gerar Relatório<br/>• Período<br/>• Tipo de Atividade]
+    MMM --> NNN[📄 Visualizar/Export PDF]
+    
+    %% NOTIFICAÇÕES E ESTADOS
+    OOO[🔔 Sistema de Notificações] --> PPP{Tipo de<br/>Notificação}
+    PPP -->|Lembrete| QQQ[⏰ Lembrete Atividade<br/>30min antes]
+    PPP -->|Nova Atividade| RRR[📅 Nova Atividade Criada]
+    PPP -->|Cancelamento| SSS[❌ Atividade Cancelada]
+    PPP -->|Atualização| TTT[🔄 Território Atualizado]
+    PPP -->|Admin Change| UUU1[⚡ Alteração Admin<br/>• Dirigente Alterado<br/>• Horário Mudou<br/>• Local Atualizado]
+    
+    %% SISTEMA DE AUTO-UPDATE
+    VVV1[🔄 Sistema Auto-Update] --> WWW1{Alteração<br/>Admin Detectada}
+    WWW1 -->|Sim| XXX1[📡 Broadcast para Todos<br/>• WebSocket<br/>• Push Notification]
+    XXX1 --> YYY1[📱 Update Automático UI<br/>• HOME se hoje<br/>• Calendário atual<br/>• Cache refresh]
+    
+    WWW1 -->|Dirigente Afetado| ZZZ1[📧 Notificação Dirigente<br/>• Novas Responsabilidades<br/>• Mudanças de Agenda]
+    
+    %% ESTADOS DE ERRO E LOADING
+    UUU[📶 Verificação Conectividade] --> VVV{Internet<br/>Disponível?}
+    VVV -->|Não| WWW[📱 Modo Offline<br/>• Dados Cached<br/>• Sync Pendente]
+    VVV -->|Sim| XXX[☁️ Sincronização Automática]
+    
+    YYY[⏳ Estados de Loading] --> ZZZ[🔄 Spinners/Skeletons<br/>• Carregamento Dados<br/>• Upload Imagens<br/>• Sync Background]
+    
+    AAAA[❌ Tratamento de Erros] --> BBBB{Tipo de<br/>Erro}
+    BBBB -->|Network| CCCC[📶 Erro de Conexão<br/>Tentar Novamente]
+    BBBB -->|Validação| DDDD[⚠️ Campos Inválidos<br/>Destacar Erros]
+    BBBB -->|Servidor| EEEE[🚨 Erro do Servidor<br/>Contatar Suporte]
+    
+    %% GESTOS E INTERAÇÕES
+    FFFF[👆 Gestos Suportados] --> GGGG[📱 Swipe para Navegar<br/>• Entre Meses<br/>• Entre Abas]
+    FFFF --> HHHH[🔍 Pinch to Zoom<br/>• Mapas<br/>• Imagens]
+    FFFF --> IIII[🔄 Pull to Refresh<br/>• Listas<br/>• Calendário]
+    
+    %% ACESSIBILIDADE
+    JJJJ[♿ Recursos Acessibilidade] --> KKKK[🔊 Voice Over<br/>Screen Reader]
+    JJJJ --> LLLL[🎨 Alto Contraste<br/>Cores Acessíveis]
+    JJJJ --> MMMM[📱 Tamanhos Fonte<br/>Dinâmicos]
+    
+    style A fill:#e1f5fe
+    style K fill:#e8f5e8
+    style W fill:#fff3e0
+    style X fill:#fce4ec
+    style Y fill:#f3e5f5
+    style OOO fill:#ffebee
+    style UUU fill:#e0f2f1
